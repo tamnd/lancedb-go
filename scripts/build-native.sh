@@ -28,6 +28,11 @@ if ! command -v cargo-zigbuild >/dev/null 2>&1; then
     export PATH="$("$PY" -c 'import sysconfig; print(sysconfig.get_path("scripts"))'):$PATH"
 fi
 
+if ! command -v cbindgen >/dev/null 2>&1; then
+    echo "📦 Installing cbindgen via cargo..."
+    cargo install cbindgen --version 0.29.2 --locked
+fi
+
 # Default to current platform if not specified
 PLATFORM="${1:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
 ARCH="${2:-$(uname -m)}"
@@ -80,10 +85,11 @@ rustup target add "$RUST_TARGET"
 echo "🔨 Building Rust library..."
 cd "$RUST_DIR"
 
-# Set macOS deployment target to match SDK version
 if [[ "$PLATFORM" == "darwin" ]]; then
-    SDK_VERSION=$(xcrun --show-sdk-version 2>/dev/null || echo "15.0")
-    export MACOSX_DEPLOYMENT_TARGET="$SDK_VERSION"
+    # Build artifacts should target a broad macOS baseline instead of the
+    # local SDK version, otherwise downstream Go links warn that the objects
+    # require a newer macOS than the final binary target.
+    export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-11.0}"
     echo "   MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET"
 fi
 

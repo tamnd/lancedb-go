@@ -36,7 +36,7 @@ jobs:
       - name: Setup Go (minimal)
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.26.3'
 
       - name: Check Rust formatting
         run: cd rust && cargo fmt -- --check
@@ -80,7 +80,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.26.3'
           cache: true
 
       # Required by scripts/build-native.sh to bootstrap cargo-zigbuild via pip.
@@ -135,7 +135,7 @@ jobs:
         shell: bash
         run: |
           if ! command -v cbindgen &> /dev/null; then
-            cargo install cbindgen --version ^0.26
+            cargo install cbindgen --version 0.29.2 --locked
           fi
 
       # Rust linting (moved here from quick-checks)
@@ -208,13 +208,13 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact-name: linux-x64
-            go-version: '1.24'
+            go-version: '1.26.3'
           - os: macos-latest
             artifact-name: macos-arm64
-            go-version: '1.24'
+            go-version: '1.26.3'
           - os: windows-latest
             artifact-name: windows-x64
-            go-version: '1.24'
+            go-version: '1.26.3'
     runs-on: ${{ matrix.os }}
 
     steps:

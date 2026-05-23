@@ -10,7 +10,6 @@ use chrono::TimeDelta;
 use lancedb::table::{CompactionOptions, OptimizeAction, OptimizeOptions};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_void};
-use std::sync::Arc;
 
 /// Create a table with a simple JSON schema
 #[no_mangle]
@@ -42,13 +41,9 @@ pub extern "C" fn simple_lancedb_create_table(
             Ok(schema_json_value) => match create_arrow_schema_from_json(&schema_json_value) {
                 Ok(arrow_schema) => {
                     match rt.block_on(async {
-                        use arrow_array::RecordBatchIterator;
-                        let empty_batches = RecordBatchIterator::new(
-                            vec![]
-                                as Vec<Result<arrow_array::RecordBatch, arrow_schema::ArrowError>>,
-                            Arc::new(arrow_schema),
-                        );
-                        conn.create_table(&name, empty_batches).execute().await
+                        conn.create_empty_table(&name, std::sync::Arc::new(arrow_schema))
+                            .execute()
+                            .await
                     }) {
                         Ok(_) => SimpleResult::ok(),
                         Err(e) => SimpleResult::error(format!("Failed to create table: {}", e)),
@@ -102,14 +97,7 @@ pub extern "C" fn simple_lancedb_create_table_with_ipc(
             Err(e) => return SimpleResult::error(format!("Invalid IPC schema: {}", e)),
         };
 
-        match rt.block_on(async {
-            use arrow_array::RecordBatchIterator;
-            let empty_batches = RecordBatchIterator::new(
-                vec![] as Vec<Result<arrow_array::RecordBatch, arrow_schema::ArrowError>>,
-                arrow_schema, // arrow_schema is already Arc<Schema>
-            );
-            conn.create_table(&name, empty_batches).execute().await
-        }) {
+        match rt.block_on(async { conn.create_empty_table(&name, arrow_schema).execute().await }) {
             Ok(_) => SimpleResult::ok(),
             Err(e) => SimpleResult::error(format!("Failed to create table: {}", e)),
         }
